@@ -15,7 +15,7 @@ jobs:
      # IP取得ライブラリをインストール
      - name: Public IP Install
        id: ip
-       uses: haythem/public-ip@v2.0.0
+       uses: haythem/public-ip@v1.3
 
      # BranchをCheckout
      - name: Checkout
