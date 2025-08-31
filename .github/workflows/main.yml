@@ -55,5 +55,5 @@ jobs:
          sleep 5
 
          # SSH接続して、git pullする
-         ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} "mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts && if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test; else cd /home/${{ secrets.USER_NAME }}/test && GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune && git checkout main && git pull origin main; fi"
+         ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} "mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts && if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test; else cd /home/${{ secrets.USER_NAME }}/test && GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune && git checkout master && git pull origin master; fi"
          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
