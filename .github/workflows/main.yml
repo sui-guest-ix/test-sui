@@ -46,6 +46,12 @@ jobs:
          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
          aws-region: ap-northeast-1
 
+     # SSHエージェントをセットアップし、秘密鍵を追加する
+     - name: Setup SSH agent
+       uses: webfactory/ssh-agent@v0.8.0
+       with:
+         ssh-private-key: ${{ secrets.PRIVATE_KEY }}
+
      # デプロイする
      - name: Deploy
        run: |
@@ -56,8 +62,6 @@ jobs:
          sleep 5
 
          # SSH接続して、git pullする
-         echo "${{ secrets.PRIVATE_KEY }}" > private_key
-         chmod 600 private_key
          ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} -i private_key "if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then git clone --depth 1 git@github.com:your-github-username/your-repository-name.git /home/${{ secrets.USER_NAME }}/test; else cd /home/${{ secrets.USER_NAME }}/test && git fetch --prune && git checkout main && git pull origin main; fi"
          # SSHのセキュリティグループを閉じる
          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
