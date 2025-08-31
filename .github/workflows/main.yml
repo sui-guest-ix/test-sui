@@ -12,13 +12,6 @@ jobs:
    runs-on: ubuntu-latest
    steps:
 
-     # Githubサーバを信頼できるものとして認識する
-     - name: Add GitHub to known hosts
-       run: |
-         mkdir -p ~/.ssh
-         ssh-keyscan github.com >> ~/.ssh/known_hosts
-         chmod 600 ~/.ssh/known_hosts
-
      # IP取得ライブラリをインストール
      - name: Public IP Install
        id: ip
@@ -45,12 +38,6 @@ jobs:
          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
          aws-region: ap-northeast-1
-
-     # SSHエージェントをセットアップし、秘密鍵を追加する
-     - name: Setup SSH agent
-       uses: webfactory/ssh-agent@v0.8.0
-       with:
-         ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
      # デプロイする
      - name: Deploy
