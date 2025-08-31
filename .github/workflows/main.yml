@@ -51,6 +51,6 @@ jobs:
          # SSH接続して、git pullする
          echo "${{ secrets.PRIVATE_KEY }}" > private_key
          chmod 600 private_key
-         ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} -i private_key "if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then git clone --depth 1 git@github.com:your-github-username/your-repository-name.git /opt/${{ secrets.USER_NAME }}/test; else cd /opt/${{ secrets.USER_NAME }}/test && git fetch --prune && git checkout main && git pull origin main; fi"
+         ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} -i private_key "if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then git clone --depth 1 git@github.com:your-github-username/your-repository-name.git /home/${{ secrets.USER_NAME }}/test; else cd /home/${{ secrets.USER_NAME }}/test && git fetch --prune && git checkout main && git pull origin main; fi"
          # SSHのセキュリティグループを閉じる
          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
