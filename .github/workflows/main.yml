@@ -12,6 +12,13 @@ jobs:
    runs-on: ubuntu-latest
    steps:
 
+     # Githubサーバを信頼できるものとして認識する
+     - name: Add GitHub to known hosts
+       run: |
+         mkdir -p ~/.ssh
+         ssh-keyscan github.com >> ~/.ssh/known_hosts
+         chmod 600 ~/.ssh/known_hosts
+
      # IP取得ライブラリをインストール
      - name: Public IP Install
        id: ip
@@ -38,13 +45,6 @@ jobs:
          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
          aws-region: ap-northeast-1
-
-     # Githubサーバを信頼できるものとして認識する
-     - name: Add GitHub to known hosts
-       run: |
-         mkdir -p ~/.ssh
-         ssh-keyscan github.com >> ~/.ssh/known_hosts
-         chmod 600 ~/.ssh/known_hosts
 
      # デプロイする
      - name: Deploy
