@@ -15,7 +15,9 @@ jobs:
      # IP取得ライブラリをインストール
      - name: Public IP Install
        id: ip
-       uses: haythem/public-ip@v1.3
+       run: |
+         PUBLIC_IP=$(curl -s https://ifconfig.me)
+         echo "ipv4=$PUBLIC_IP" >> $GITHUB_OUTPUT
 
      # BranchをCheckout
      - name: Checkout
