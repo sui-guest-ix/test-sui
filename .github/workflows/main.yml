@@ -1,61 +1,60 @@
 name: EC2 auto deploy
 
 on:
- pull_request:
-   branches: [ master ]
-   types: [closed]
+  pull_request:
+    branches: [ master ]
+    types: [ closed ]
 
- workflow_dispatch:
+  workflow_dispatch:
 
 jobs:
- build:
-   runs-on: ubuntu-latest
-   steps:
+  build:
+    runs-on: ubuntu-latest
+    steps:
 
-     # IP取得ライブラリをインストール
-     - name: Public IP Install
-       id: ip
-       run: |
-         PUBLIC_IP=$(curl -s https://ifconfig.me)
-         echo "ipv4=$PUBLIC_IP" >> $GITHUB_OUTPUT
+      # IP取得ライブラリをインストール
+      - name: Public IP Install
+        id: ip
+        run: |
+          PUBLIC_IP=$(curl -s https://ifconfig.me)
+          echo "ipv4=$PUBLIC_IP" >> $GITHUB_OUTPUT
 
-     # BranchをCheckout
-     - name: Checkout
-       uses: actions/checkout@v2
+      # BranchをCheckout
+      - name: Checkout
+        uses: actions/checkout@v2
 
-     # AWS CLIをインストールする
-     - name: AWS CLI install
-       run: |
-         curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
-         unzip awscliv2.zip
-         sudo ./aws/install --update
-         aws --version
+      # AWS CLIをインストールする
+      - name: AWS CLI install
+        run: |
+          curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+          unzip awscliv2.zip
+          sudo ./aws/install --update
+          aws --version
 
-     # AWS CLIにキーを設定をする
-     - name: AWS set Credentials
-       uses: aws-actions/configure-aws-credentials@v1
-       with:
-         aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
-         aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-         aws-region: ap-northeast-1
+      # AWS CLIにキーを設定をする
+      - name: AWS set Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ap-northeast-1
 
-     # SSHエージェントをセットアップし、秘密鍵を追加する
-     - name: Setup SSH agent
-       uses: webfactory/ssh-agent@v0.8.0
-       with:
-         ssh-private-key: ${{ secrets.PRIVATE_KEY }}
+      # SSHエージェントをセットアップし、秘密鍵を追加する
+      - name: Setup SSH agent
+        uses: webfactory/ssh-agent@v0.8.0
+        with:
+          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
 
-     # デプロイする
-     - name: Deploy
-       run: |
+      # デプロイする
+      - name: Deploy
+        run: |
+          # SSHのセキュリティグループを開放する
+          aws ec2 authorize-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+          echo "Waiting for security group rule to apply..."
+          sleep 5
 
-         # SSHのセキュリティグループを開放する
-         aws ec2 authorize-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
-         echo "Waiting for security group rule to apply..."
-         sleep 5
-
-         # SSH接続して、git pullする
-            ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} << 'EOF'
+          # SSH接続して、git pullする
+          ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} <<- 'EOF'
             mkdir -p ~/.ssh
             ssh-keyscan github.com >> ~/.ssh/known_hosts
 
@@ -67,10 +66,10 @@ jobs:
               git checkout master
               git pull origin master
             fi
-EOF
+            EOF
 
-     # セキュリティグループを閉じる
-     - name: Revoke Security Group
-       if: always()
-       run: |
-         aws ec2 revoke-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
+      # セキュリティグループを閉じる
+      - name: Revoke Security Group
+        if: always()
+        run: |
+          aws ec2 revoke-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
