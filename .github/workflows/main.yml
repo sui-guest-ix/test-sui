@@ -67,7 +67,7 @@ jobs:
               git checkout master
               git pull origin master
             fi
-            EOF
+EOF
 
      # セキュリティグループを閉じる
      - name: Revoke Security Group
