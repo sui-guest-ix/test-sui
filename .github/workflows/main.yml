@@ -55,10 +55,17 @@ jobs:
 
           # SSH接続して、git pullする
           ssh -oStrictHostKeyChecking=no ${{ secrets.A_USER_NAME }}@${{ secrets.HOST_NAME }} "
+            # 成功したコードのロジックに合わせ、リモートでgit関連の設定を行う
+            mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts && \
             if [ ! -d /home/${{ secrets.A_USER_NAME }}/test/.git ]; then
-              git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
+              # `ssh-agent`が使うキーがわからないため、明示的に`id_rsa`を指定
+              # `webfactory/ssh-agent`は`id_rsa`を自動で登録
+              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
             else
-              cd /home/${{ secrets.A_USER_NAME }}/test && GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune && git checkout master && git pull origin master;
+              cd /home/${{ secrets.A_USER_NAME }}/test && \
+              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa' git fetch --prune && \
+              git checkout master && \
+              git pull origin master;
             fi
           "
 
