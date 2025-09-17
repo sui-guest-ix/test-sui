@@ -56,7 +56,7 @@ jobs:
           # SSH接続して、git pullする
           ssh -oStrictHostKeyChecking=no ${{ secrets.A_USER_NAME }}@${{ secrets.HOST_NAME }} "
             if [ ! -d /home/${{ secrets.A_USER_NAME }}/test/.git ]; then
-              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
+              git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
             else
               cd /home/${{ secrets.A_USER_NAME }}/test && GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune && git checkout master && git pull origin master;
             fi
