@@ -39,11 +39,12 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
 
-      # SSHエージェントをセットアップし、秘密鍵を追加する
-      - name: Setup SSH agent
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.PRIVATE_KEY }}
+      # SSH秘密鍵をファイルに書き込む
+      - name: Write SSH Key
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
 
       # デプロイする
       - name: Deploy
@@ -53,19 +54,16 @@ jobs:
           echo "Waiting for security group rule to apply..."
           sleep 5
 
-          # SSH接続して、git pullする
+          # SSH接続して、git関連の作業を分離して実行
           ssh -oStrictHostKeyChecking=no ${{ secrets.A_USER_NAME }}@${{ secrets.HOST_NAME }} "
-            # 成功したコードのロジックに合わせ、リモートでgit関連の設定を行う
-            mkdir -p ~/.ssh && ssh-keyscan github.com >> ~/.ssh/known_hosts && \
+            # GitHubのホストキーを追加
+            ssh-keyscan github.com >> ~/.ssh/known_hosts
+            
+            # ディレクトリの存在を確認し、クローンまたはプルを実行
             if [ ! -d /home/${{ secrets.A_USER_NAME }}/test/.git ]; then
-              # `ssh-agent`が使うキーがわからないため、明示的に`id_rsa`を指定
-              # `webfactory/ssh-agent`は`id_rsa`を自動で登録
-              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
+              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.A_USER_NAME }}/test;
             else
-              cd /home/${{ secrets.A_USER_NAME }}/test && \
-              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_rsa' git fetch --prune && \
-              git checkout master && \
-              git pull origin master;
+              cd /home/${{ secrets.A_USER_NAME }}/test && GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune && git checkout master && git pull origin master;
             fi
           "
 
