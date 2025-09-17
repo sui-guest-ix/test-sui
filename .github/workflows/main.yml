@@ -48,19 +48,18 @@ jobs:
 
       - name: Deploy
         run: |
-          # SSH接続とリモートでのコマンド実行
-          ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} "
-          mkdir -p ~/.ssh &&
-          ssh-keyscan github.com >> ~/.ssh/known_hosts &&
-          if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then
-            GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test;
-          else
-            cd /home/${{ secrets.USER_NAME }}/test &&
-            GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune &&
-            git checkout master &&
-            git pull origin master;
-          fi
-        "
+          ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} 
+            mkdir -p ~/.ssh &&
+            ssh-keyscan github.com >> ~/.ssh/known_hosts &&
+            if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then
+              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test;
+            else
+              cd /home/${{ secrets.USER_NAME }}/test &&
+              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune &&
+              git checkout master &&
+              git pull origin master;
+            fi
+          "
 
       - name: Revoke Security Group
         if: always()
