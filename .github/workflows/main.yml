@@ -42,7 +42,7 @@ jobs:
           # 複数の鍵を改行区切りで指定します。
           ssh-private-key: |
             ${{ secrets.PRIVATE_KEY }}
-            ${{ secrets.GITHUB_DEPLOY_KEY }}
+            ${{ secrets.PRIVATE_DEPLOY_KEY }}
           
       # 確認メッセージ追加
       - name: Check Agent Status
