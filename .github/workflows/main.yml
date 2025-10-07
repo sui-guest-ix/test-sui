@@ -34,32 +34,64 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ap-northeast-1
 
-      - name: Write SSH Key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.PRIVATE_KEY }}" > ~/.ssh/id_rsa
-          chmod 600 ~/.ssh/id_rsa
+      # 変更点 1: 秘密鍵をファイルに書き出す代わりに、ssh-agentに登録します
+      # ログイン鍵 (PRIVATE_KEY) とデプロイ鍵 (GITHUB_DEPLOY_KEY) の両方を登録します。
+      - name: Setup SSH Agent (All Keys)
+        uses: webfactory/ssh-agent@v0.9.1
+        with:
+          # 複数の鍵を改行区切りで指定します。
+          ssh-private-key: |
+            ${{ secrets.PRIVATE_KEY }}
+            ${{ secrets.GITHUB_DEPLOY_KEY }}
+          
+      # 確認メッセージ追加
+      - name: Check Agent Status
+        run: ssh-add -l
 
       - name: Authorize Security Group Ingress
         run: |
+          echo "::notice::SSH接続用のセキュリティグループルールを追加します。" # 確認echo
           aws ec2 authorize-security-group-ingress --group-id ${{ secrets.EC2_SECURITY_GROUP_ID }} --protocol tcp --port 22 --cidr ${{ steps.ip.outputs.ipv4 }}/32
           echo "Waiting for security group rule to apply..."
           sleep 5
 
       - name: Deploy
         run: |
-          ssh -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} "
+          echo "::notice::EC2サーバーへのSSH接続を開始します: ${{ secrets.HOST_NAME }}" # 確認echo (接続開始前)
+          # 変更点 2: SSH接続時に -A (Agent Forwarding) オプションを追加します。
+          ssh -A -oStrictHostKeyChecking=no ${{ secrets.USER_NAME }}@${{ secrets.HOST_NAME }} "
+            
+            echo '::notice::サーバーへ正常にログインしました。デプロイ処理を開始します。' # 確認echo (サーバー上)
+            
+            # --- 変更 3: GitHubデプロイ鍵をサーバー上に書き出す処理を削除 ---
+            # 鍵はAgent Forwarding経由で利用されるため、この処理は不要になりました。
+            echo '::notice::Agent Forwarding経由でGitHub認証を試行します。'
+            # --------------------------------------------------------------
+
+            # GitHubのホスト鍵を追加
             mkdir -p ~/.ssh &&
             ssh-keyscan github.com >> ~/.ssh/known_hosts &&
+            echo '::notice::GitHubのホスト鍵を追加しました。' # 確認echo
+            
+            # Git操作では、Agentが認証情報を提供するため、鍵の指定は不要です。
             if [ ! -d /home/${{ secrets.USER_NAME }}/test/.git ]; then
-              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test;
+              echo '::notice::リポジトリが存在しないため、git clone を実行します。' # 確認echo (Git操作前)
+              # 変更 4: GIT_SSH_COMMANDを削除します。
+              git clone --depth 1 git@github.com:sui-guest-ix/test-sui.git /home/${{ secrets.USER_NAME }}/test;
+              echo '::notice::git clone が完了しました。' # 確認echo (Git操作後)
             else
               cd /home/${{ secrets.USER_NAME }}/test &&
-              GIT_SSH_COMMAND='ssh -i ~/.ssh/id_ed25519' git fetch --prune &&
+              echo '::notice::リポジトリが存在するため、git pull を実行します。' # 確認echo (Git操作前)
+              # 変更 4: GIT_SSH_COMMANDを削除します。
+              git fetch --prune &&
               git checkout master &&
               git pull origin master;
+              echo '::notice::git pull が完了しました。' # 確認echo (Git操作後)
             fi
+            
+            echo '::notice::サーバー上でのデプロイ処理が完了しました。' # 確認echo (サーバー処理完了)
           "
+          echo "::notice::SSH接続が終了しました。" # 確認echo (接続終了)
 
       - name: Revoke Security Group
         if: always()
